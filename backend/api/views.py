@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.contrib.auth.models import User
-from rest_framework import generics
+from rest_framework import generics,serializers
 from .serializers import UserSerializer, NoteSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from .models import Note
@@ -22,14 +22,18 @@ class NoteListCreate(generics.ListCreateAPIView):
             raise serializer.ValidationError(serializer.errors)
         
 class NoteDelete(generics.DestroyAPIView):
-    queryset = Note.objects.all()
     serializer_class = NoteSerializer
     permission_classes = [IsAuthenticated]
+    queryset = Note.objects.all()
+
 
     def get_object(self):
-        user = self.request.user
-        return Note.objects.filter(auther=user)
-
+            user = self.request.user
+            pk = self.kwargs['pk']
+            try:
+                return Note.objects.get(pk=pk, auther=user)
+            except Note.DoesNotExist:
+                raise serializers.ValidationError("Note not found or not authorized to delete.")
 
 class CreateUserView(generics.CreateAPIView):
     queryset = User.objects.all()
